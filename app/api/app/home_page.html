@@ -1,0 +1,758 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <title>Автобаза "ООО Машинки"</title>
+    <link rel="icon" type="image/png" href="Icons.png" />
+    <link rel="stylesheet" href="Style.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+</head>
+
+<body>
+    <header>
+        <h3>Веб-интерфейс для администрирования БД Автобазы "ООО Машинки"</h3>
+    </header>
+    <nav class="navbar navbar-expand-md navbar-dark bg-dark fixed-top">
+        <div class="collapse navbar-collapse" id="navbarNavAltMarkup">
+            <div class="navbar-nav">
+                <div class="navbar-nav">
+                    <ul>
+                        <li><a class="nav-item" href="javascript:void(0);" id="home">Домашняя страница</a></li>
+                        <li><a class="nav-item" href="javascript:void(0);" id="update_account">Учетная запись</a></li>
+                        <li><a class="nav-item" href="javascript:void(0);" id="logout">Выход</a></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </nav>
+    <main role="main" class="container starter-template">
+
+        <div class="row">
+            <div class="col">
+                <div id="response"></div>
+                <div id="content"></div>
+                <div id="content_up"></div>
+            </div>
+        </div>
+    </main>
+    <script src="http://code.jquery.com/jquery-3.4.1.min.js"
+        integrity="sha256-CSXorXvZcTkaix6Yvo6HppcZGetbYMGWSFlBw8HfCJo=" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js"
+        integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q"
+        crossorigin="anonymous"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"
+        integrity="sha384-JjSmVgyd0p3pXB1rRibZUAYoIIy6OrQ6VrjIEaFf/nJGzIxFDsf4x0xIM+B07jRM"
+        crossorigin="anonymous"></script>
+
+    <script>
+        jQuery($ => {
+            $(document).on("click", "#home", () => {
+                $("#content").html("");
+                $("#content_up").html("");
+                clearResponse();
+            });
+            $(document).on("click", "#update_account", () => {
+                showHomePage();
+                showUpdateAccountForm();
+            });
+            $(document).on("submit", "#update_account_form", function () {
+                const update_account_form = $(this);
+                const jwt = getCookie("jwt");
+                let update_account_form_obj = update_account_form.serializeObject()
+                update_account_form_obj.jwt = jwt;
+                const form_data = JSON.stringify(update_account_form_obj);
+                $.ajax({
+                    url: "api/update_user.php",
+                    type: "POST",
+                    contentType: "application/json",
+                    data: form_data,
+                    success: result => {
+                        $("#response").html("<div class='alert alert-success'>Учетная запись обновлена</div>");
+                        setCookie("jwt", result.jwt, 1);
+                    },
+                    error: (xhr, resp, text) => {
+                        if (xhr.responseJSON.message == "Невозможно обновить пользователя") {
+                            $("#response").html("<div class='alert alert-danger'>Невозможно обновить пользователя</div>");
+                        }
+                        else if (xhr.responseJSON.message == "Доступ закрыт") {
+                            showLoginPage();
+                            $("#response").html("<div class='alert alert-success'>Доступ закрыт. Пожалуйста войдите</div>");
+                        }
+                    }
+                });
+                return false;
+            });
+            $(document).on("click", "#logout", () => {
+                showLoginPage();
+                $("#response").html("<div class='alert alert-info'>Вы вышли из системы.</div>");
+                window.location.replace("http://localhost:8000/");
+            });
+            function clearResponse() {
+                $("#response").html("");
+            }
+            function showLoginPage() {
+                setCookie("jwt", "", 1);
+                let html = `
+                    <h2>Вход</h2>
+                    <form id="login_form">
+                        <div class="form-group">
+                            <label for="email">Email адрес</label>
+                            <input type="email" class="form-control" id="email" name="email" placeholder="Введите email">
+                            </div>
+                            <div class="form-group">
+                                <label for="password">Пароль</label>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Введите пароль">
+                                </div>
+                                <button type="submit" class="btn btn-primary">Войти</button>
+                                </form>
+                                `;
+                $("#content").html(html);
+                clearResponse();
+                showLoggedOutMenu();
+            }
+            function setCookie(cname, cvalue, exdays) {
+                var d = new Date();
+                d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+                var expires = "expires=" + d.toUTCString();
+                document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+            }
+            function showLoggedOutMenu() {
+                $("#login, #sign_up").show();
+            }
+            function showHomePage() {
+                const jwt = getCookie("jwt");
+                $.post("api/validate_token.php", JSON.stringify({ jwt: jwt })).done(result => {
+                    let html = `
+                                    <div class="card">
+                                        <div class="card-header">Добро пожаловать!</div>
+                                        <div class="card-body">
+                                            <h5 class="card-title">Вы вошли в систему</h5>
+                                            <p class="card-text">Вы не сможете получить доступ к домашней странице и страницам учетной записи, если вы не вошли в систему</p>
+                                            </div>
+                                            </div>
+                                            `;
+                    $("#content").html(html);
+                    showLoggedInMenu();
+                })
+                    .fail(function (result) {
+                        showLoginPage();
+                        $("#response").html("<div class='alert alert-danger'>Пожалуйста войдите, чтобы получить доступ к домашней станице</div>");
+                    });
+            }
+            function getCookie(cname) {
+                let name = cname + "=";
+                let decodedCookie = decodeURIComponent(document.cookie);
+                let ca = decodedCookie.split(";");
+                for (let i = 0; i < ca.length; i++) {
+                    let c = ca[i];
+                    while (c.charAt(0) == " ") {
+                        c = c.substring(1);
+                    }
+                    if (c.indexOf(name) == 0) {
+                        return c.substring(name.length, c.length);
+                    }
+                }
+                return "";
+            }
+            function showLoggedInMenu() {
+                $("#login, #sign_up").hide();
+            }
+            function showUpdateAccountForm() {
+                const jwt = getCookie("jwt");
+                $.post("api/validate_token.php", JSON.stringify({ jwt: jwt })).done(result => {
+                    let html = `
+                                            <h2>Обновление аккаунта</h2>
+                                            <form id="update_account_form">
+                                                <div class="form-group">
+                                                    <label for="firstname">Имя</label>
+                                                    <input type="text" class="form-control" name="firstname" id="firstname" required value="${result.data.firstname}" />
+                                                    </div>
+                                                    <div class="form-group">
+                                                        <label for="lastname">Фамилия</label>
+                                                        <input type="text" class="form-control" name="lastname" id="lastname" required value="${result.data.lastname}" />
+                                                        </div>
+                                                        <div class="form-group">
+                                                            <label for="email">Email</label>
+                                                            <input type="email" class="form-control" name="email" id="email" required value="${result.data.email}" />
+                                                            </div>
+                                                            <div class="form-group">
+                                                                <label for="password">Пароль</label>
+                                                                <input type="password" class="form-control" name="password" id="password" />
+                                                                </div>
+                                                                <button type="submit" class="btn btn-primary">
+                                                                    Сохранить
+                                                                    </button>
+                                                                    </form>
+                                                                    `;
+                    clearResponse();
+                    $("#content_up").html(html);
+                })
+                    .fail(result => {
+                        showLoginPage();
+                        $("#response").html("<div class='alert alert-danger'>Пожалуйста, войдите, чтобы получить доступ к странице учетной записи</div>");
+                    });
+            }
+            $.fn.serializeObject = function () {
+                let o = {};
+                let a = this.serializeArray();
+                $.each(a, function () {
+                    if (o[this.name] !== undefined) {
+                        if (!o[this.name].push) {
+                            o[this.name] = [o[this.name]];
+                        }
+                        o[this.name].push(this.value || "");
+                    } else {
+                        o[this.name] = this.value || "";
+                    }
+                });
+                return o;
+            };
+        });
+    </script>
+    <div class="all">
+        <div>
+            <div class="PUT_users">
+                <div class="PUT_users_container">
+                    <div class="PUT_users_wrapper">
+                        <div id="PT_users">
+                            <form role="form" action="http://localhost:8000/api/Users.php" method="POST">
+                                <input type="hidden" id="PUT_users_id" name="id_up" value="">
+                                <p>Роль</p>
+                                <input type="text" name="role">
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id='ajax_users'></div>
+        </div>
+        <div>
+            <div class="PUT_client">
+                <div class="PUT_client_container">
+                    <div class="PUT_client_wrapper">
+                        <div id="PT_client">
+                            <form role="form" action="http://localhost:8000/api/client.php" method="POST">
+                                <input type="hidden" id="PUT_client_id" name="id_up" value="">
+                                <p>ФИО</p>
+                                <input type="text" name="name">
+                                <p>Адрес</p>
+                                <input type="text" name="address">
+                                <p>Номер телефона</p>
+                                <input type="number" name="number"> <br>
+                                <p>Паспортные данные</p>
+                                <input type="number" name="documents"> <br>
+                                <p>Номер водительского удостоверения</p>
+                                <input type="number" name="car_rights"> <br>
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="POST_client">
+                <div class="POST_client_container">
+                    <div class="POST_client_wrapper">
+                        <div id="PS_client">
+                            <form role="form" action="http://localhost:8000/api/client.php" method="POST">
+                                <p>ФИО</p>
+                                <input type="text" name="name">
+                                <p>Адрес</p>
+                                <input type="text" name="address">
+                                <p>Номер телефона</p>
+                                <input type="number" name="number"> <br>
+                                <p>Паспортные данные</p>
+                                <input type="number" name="documents"> <br>
+                                <p>Номер водительского удостоверения</p>
+                                <input type="number" name="car_rights"> <br>
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id='ajax_client'></div>
+            <div id="Dob_client"></div>
+        </div>
+        <div>
+            <div class="PUT_ArendC">
+                <div class="PUT_ArendC_container">
+                    <div class="PUT_ArendC_wrapper">
+                        <div id="PT_ArendC">
+                            <form role="form" action="http://localhost:8000/api/ArendCar.php" method="POST">
+                                <input type="hidden" id="PUT_ArendC_id" name="id_up" value="">
+                                <p>Марка</p>
+                                <input type="text" name="marka">
+                                <p>Время аренды</p>
+                                <input type="number" name="time_arend">
+                                <p>Стоимость аренды</p>
+                                <input type="number" name="price_arend">
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="POST_ArendC">
+                <div class="POST_ArendC_container">
+                    <div class="POST_ArendC_wrapper">
+                        <div id="PS_ArendC">
+                            <form role="form" action="http://localhost:8000/api/ArendCar.php" method="POST">
+                                <p>Марка</p>
+                                <input type="text" name="marka">
+                                <p>Время аренды</p>
+                                <input type="number" name="time_arend">
+                                <p>Стоимость аренды</p>
+                                <input type="number" name="price_arend">
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id='ajax_ArendC'></div>
+            <div id="Dob_ArendC"></div>
+        </div>
+        <div>
+            <div class="PUT_Parking">
+                <div class="PUT_Parking_container">
+                    <div class="PUT_Parking_wrapper">
+                        <div id="PT_Parking">
+                            <form role="form" action="http://localhost:8000/api/Parking.php" method="POST">
+                                <input type="hidden" id="PUT_Parking_id" name="id_up" value="">
+                                <p>Номер парковки</p>
+                                <input type="text" name="numb_parking">
+                                <p>Статус</p>
+                                <input type="number" name="status_p">
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="POST_Parking">
+                <div class="POST_Parking_container">
+                    <div class="POST_Parking_wrapper">
+                        <div id="PS_Parking">
+                            <form role="form" action="http://localhost:8000/api/Parking.php" method="POST">
+                                <p>Номер парковки</p>
+                                <input type="text" name="numb_parking">
+                                <p>Статус</p>
+                                <input type="number" name="status_p">
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id='ajax_Parking'></div>
+            <div id="Dob_Parking"></div>
+        </div>
+        <div>
+            <div class="PUT_Ticket">
+                <div class="PUT_Ticket_container">
+                    <div class="PUT_Ticket_wrapper">
+                        <div id="PT_Ticket">
+                            <form role="form" action="http://localhost:8000/api/Ticket.php" method="POST">
+                                <input type="hidden" id="PUT_Ticket_id" name="id_up" value="">
+                                <p>ID Клиента</p>
+                                <input type="number" name="id_client_t">
+                                <p>ID Машины</p>
+                                <input type="number" name="id_car_t">
+                                <p>ID Парковочного места</p>
+                                <input type="number" name="id_parking_t">
+                                <p>Цена</p>
+                                <input type="number" name="price">
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="POST_Ticket">
+                <div class="POST_Ticket_container">
+                    <div class="POST_Ticket_wrapper">
+                        <div id="PS_Ticket">
+                            <form role="form" action="http://localhost:8000/api/Ticket.php" method="POST">
+                                <p>ID Клиента</p>
+                                <input type="number" name="id_client_t">
+                                <p>ID Машины</p>
+                                <input type="number" name="id_car_t">
+                                <p>ID Парковочного места</p>
+                                <input type="number" name="id_parking_t">
+                                <p>Цена</p>
+                                <input type="number" name="price">
+                                <button type="submit">Отправить</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id='ajax_Ticket'></div>
+            <div id="Dob_Ticket"></div>
+        </div>
+    </div>
+    </div>
+    <script>
+        function getCookie(cname) {
+            let name = cname + "=";
+            let decodedCookie = decodeURIComponent(document.cookie);
+            let ca = decodedCookie.split(";");
+            for (let i = 0; i < ca.length; i++) {
+                let c = ca[i];
+                while (c.charAt(0) == " ") {
+                    c = c.substring(1);
+                }
+                if (c.indexOf(name) == 0) {
+                    return c.substring(name.length, c.length);
+                }
+            }
+            return "";
+        }
+        function openUsers() {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_admin.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const request = new XMLHttpRequest();
+                const url = "http://localhost:8000/api/Users.php";
+                request.open('GET', url);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-url');
+                request.addEventListener("readystatechange", () => {
+                    if (request.readyState === 4 && request.status === 200) {
+                        var ajaxDisplay = document.getElementById('ajax_users');
+                        ajaxDisplay.innerHTML = request.responseText;
+                    }
+                });
+                request.send();
+            })
+        };
+        function openClient() {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const request = new XMLHttpRequest();
+                const url = "http://localhost:8000/api/client.php";
+                request.open('GET', url);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-url');
+                request.addEventListener("readystatechange", () => {
+                    if (request.readyState === 4 && request.status === 200) {
+                        var ajaxDisplay = document.getElementById('ajax_client');
+                        ajaxDisplay.innerHTML = request.responseText;
+                        let html = `
+                        <h3>Добавление нового клиента</h3>
+                        <button class="Button_addF" onclick="openForm_add()">Добавить</button>
+                                `;
+                        $("#Dob_client").html(html);
+
+                    }
+                });
+                request.send();
+            })
+        };
+        function open() {
+            const jwt = getCookie("jwt");
+            const request_AC = new XMLHttpRequest();
+            const url_AC = "http://localhost:8000/api/ArendCar.php";
+            request_AC.open('GET', url_AC);
+            request_AC.setRequestHeader('Content-Type', 'application/x-www-form-url');
+            request_AC.addEventListener("readystatechange", () => {
+                if (request_AC.readyState === 4 && request_AC.status === 200) {
+                    var ajaxDisplay = document.getElementById('ajax_ArendC');
+                    ajaxDisplay.innerHTML = request_AC.responseText;
+                    $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                        let html = `
+                        <h3>Добавление новую арендную машину</h3>
+                        <button class="Button_addFAC" onclick="openForm_addAC()">Добавить</button>
+                                `;
+                        $("#Dob_ArendC").html(html);
+                    })
+                }
+            });
+            request_AC.send();
+        };
+        function openParking() {
+            const jwt = getCookie("jwt");
+            const request_AC = new XMLHttpRequest();
+            const url_AC = "http://localhost:8000/api/Parking.php";
+            request_AC.open('GET', url_AC);
+            request_AC.setRequestHeader('Content-Type', 'application/x-www-form-url');
+            request_AC.addEventListener("readystatechange", () => {
+                if (request_AC.readyState === 4 && request_AC.status === 200) {
+                    var ajaxDisplay = document.getElementById('ajax_Parking');
+                    ajaxDisplay.innerHTML = request_AC.responseText;
+                    $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                        let html = `
+                        <h3>Добавление нового парковочного места</h3>
+                        <button class="Button_addP" onclick="openForm_addP()">Добавить</button>
+                                `;
+                        $("#Dob_Parking").html(html);
+                    })
+                }
+            });
+            request_AC.send();
+        };
+        function openTicket() {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const request = new XMLHttpRequest();
+                const url = "http://localhost:8000/api/Ticket.php";
+                request.open('GET', url);
+                request.setRequestHeader('Content-Type', 'application/x-www-form-url');
+                request.addEventListener("readystatechange", () => {
+                    if (request.readyState === 4 && request.status === 200) {
+                        var ajaxDisplay = document.getElementById('ajax_Ticket');
+                        ajaxDisplay.innerHTML = request.responseText;
+                        let html = `
+                        <h3>Добавление нового талона</h3>
+                        <button class="Button_addT" onclick="openForm_addT()">Добавить</button>
+                                `;
+                        $("#Dob_Ticket").html(html);
+
+                    }
+                });
+                request.send();
+            })
+        };
+        function openForm_addT() {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_POST = document.getElementsByClassName('Button_addT');
+                const form_POST = document.querySelector('#PS_Ticket');
+                const Update_client_POST = document.querySelector('.POST_Ticket');
+
+                for (const box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('POST_Ticket_open');
+                    });
+                }
+            })
+        };
+        function openForm_uppT(clicked_id) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_POST = document.getElementsByClassName('Button_upT');
+                const form_POST = document.querySelector('#PT_Ticket');
+                const Update_client_POST = document.querySelector('.PUT_Ticket');
+                for (const box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('PUT_Ticket_open');
+                        var myvar = clicked_id;
+                        myvar = myvar.replace('iButton_upT_', '');
+                        var elem = document.getElementById("PUT_Ticket_id");
+                        elem.value = myvar;
+                    });
+                }
+            })
+        };
+        function openForm_delT(clicked_id_del) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_admin.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_DELL = document.getElementsByClassName('Button_delT');
+                var myvar = clicked_id_del;
+                myvar = myvar.replace('iButton_delT_', '');
+                const request_del = new XMLHttpRequest()
+                const url_del = "http://localhost:8000/api/Ticket.php?id=" + myvar;
+                request_del.open('DELETE', url_del);
+                request_del.setRequestHeader('Content-Type', 'application/x-www-form-url');
+                request_del.addEventListener("readystatechange", () => {
+                    if (request_del.readyState === 4 && request_del.status === 200) {
+                    }
+                });
+                request_del.send();
+            })
+        };
+        function openForm_addP() {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_POST = document.getElementsByClassName('Button_addP');
+                const form_POST = document.querySelector('#PS_Parking');
+                const Update_client_POST = document.querySelector('.POST_Parking');
+                for (const box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('POST_Parking_open');
+                    });
+                }
+            })
+        };
+        function openForm_uppP(clicked_id) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_POST = document.getElementsByClassName('Button_upP');
+                const form_POST = document.querySelector('#PT_Parking');
+                const Update_client_POST = document.querySelector('.PUT_Parking');
+                for (const box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('PUT_Parking_open');
+                        var myvar = clicked_id;
+                        myvar = myvar.replace('iButton_upP_', '');
+                        var elem = document.getElementById("PUT_Parking_id");
+                        elem.value = myvar;
+                    });
+                }
+            })
+        };
+        function openForm_delP(clicked_id_del) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_admin.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_DELL = document.getElementsByClassName('Button_delP');
+                var myvar = clicked_id_del;
+                myvar = myvar.replace('iButton_delP_', '');
+                const request_del = new XMLHttpRequest()
+                const url_del = "http://localhost:8000/api/Parking.php?id=" + myvar;
+                request_del.open('DELETE', url_del);
+                request_del.setRequestHeader('Content-Type', 'application/x-www-form-url');
+                request_del.addEventListener("readystatechange", () => {
+                    if (request_del.readyState === 4 && request_del.status === 200) {
+                    }
+                });
+                request_del.send();
+            })
+        };
+
+        function openForm_uppU(clicked_id) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_admin.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_POST = document.getElementsByClassName('Button_upU');
+                const form_POST = document.querySelector('#PT_users');
+                const Update_client_POST = document.querySelector('.PUT_users');
+                for (const box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('PUT_users_open');
+                        var myvar = clicked_id;
+                        myvar = myvar.replace('iButton_upU_', '');
+                        var elem = document.getElementById("PUT_users_id");
+                        elem.value = myvar;
+                        alert(elem.value);
+                    });
+                }
+            })
+        };
+        function openForm_delU(clicked_id_del) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_admin.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_DELL = document.getElementsByClassName('Button_delU');
+                var myvar = clicked_id_del;
+                myvar = myvar.replace('iButton_delU_', '');
+                const request_del = new XMLHttpRequest()
+                const url_del = "http://localhost:8000/api/Users.php?id=" + myvar;
+                request_del.open('DELETE', url_del);
+                request_del.setRequestHeader('Content-Type', 'application/x-www-form-url');
+                alert(url_del);
+                request_del.addEventListener("readystatechange", () => {
+                    if (request_del.readyState === 4 && request_del.status === 200) {
+                    }
+                });
+                request_del.send();
+            })
+        };
+        function openForm_add() {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_POST = document.getElementsByClassName('Button_addF');
+                const form_POST = document.querySelector('#PS_client');
+                const Update_client_POST = document.querySelector('.POST_client');
+                for (const box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('POST_client_open');
+                    });
+                }
+            })
+        };
+        function openForm_upp(clicked_id) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_POST = document.getElementsByClassName('Button_upF');
+                const form_POST = document.querySelector('#PT_client');
+                const Update_client_POST = document.querySelector('.PUT_client');
+                for (const box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('PUT_client_open');
+                        var myvar = clicked_id;
+                        myvar = myvar.replace('iButton_upF_', '');
+                        var elem = document.getElementById("PUT_client_id");
+                        elem.value = myvar;
+                    });
+                }
+            })
+        };
+        function openForm_del(clicked_id_del) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_admin.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_DELL = document.getElementsByClassName('Button_delF');
+                var myvar = clicked_id_del;
+                myvar = myvar.replace('iButton_delF_', '');
+                const request_del = new XMLHttpRequest()
+                const url_del = "http://localhost:8000/api/client.php?id=" + myvar;
+                request_del.open('DELETE', url_del);
+                request_del.setRequestHeader('Content-Type', 'application/x-www-form-url');
+                request_del.addEventListener("readystatechange", () => {
+                    if (request_del.readyState === 4 && request_del.status === 200) {
+                    }
+                });
+                request_del.send();
+            })
+        };
+        function openForm_addAC() {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                button_POST = document.getElementsByClassName('Button_addFAC');
+                form_POST = document.querySelector('#PS_ArendC');
+                Update_client_POST = document.querySelector('.POST_ArendC');
+                for (box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('POST_ArendC_open');
+                    });
+                }
+            })
+        };
+        function openForm_uppAC(clicked_id) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_worker.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_POST = document.getElementsByClassName('Button_upFAC');
+                const form_POST = document.querySelector('#PT_ArendC');
+                const Update_client_POST = document.querySelector('.PUT_ArendC');
+                for (const box of button_POST) {
+                    box.addEventListener('click', function onClick() {
+                        form_POST.classList.add('open');
+                        Update_client_POST.classList.add('PUT_ArendC_open');
+                        var myvar = clicked_id;
+                        myvar = myvar.replace('iButton_upFAC_', '');
+                        var elem = document.getElementById("PUT_ArendC_id");
+                        elem.value = myvar;
+                    });
+                }
+            })
+        };
+        function openForm_delAC(clicked_id_del) {
+            const jwt = getCookie("jwt");
+            $.post("api/validate_token_admin.php", JSON.stringify({ jwt: jwt })).done(result => {
+                const button_DELL = document.getElementsByClassName('Button_delFAC');
+                var myvar = clicked_id_del;
+                myvar = myvar.replace('iButton_delFAC_', '');
+                const request_del = new XMLHttpRequest()
+                const url_del = "http://localhost:8000/api/ArendCar.php?id=" + myvar;
+                request_del.open('DELETE', url_del);
+                request_del.setRequestHeader('Content-Type', 'application/x-www-form-url');
+                request_del.addEventListener("readystatechange", () => {
+                    if (request_del.readyState === 4 && request_del.status === 200) {
+                    }
+                });
+                request_del.send();
+            })
+        };
+        window.onload = openClient();
+        window.onload = openUsers();
+        window.onload = open();
+        window.onload = openParking();
+        window.onload = openTicket();
+    </script>
+</body>
+
+</html>

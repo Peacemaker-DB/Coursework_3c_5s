@@ -1,0 +1,179 @@
+#PS_client, #PT_client, #PT_users, #PS_ArendC, #PT_ArendC, #PS_Parking, #PT_Parking, #PS_Ticket, #PT_Ticket{
+    display: none;
+    animation-duration: 1.5s;
+    animation-fill-mode: both;
+    animation-name: fadeIn;
+}
+
+    #PS_client.open, #PT_client.open, #PT_users.open, #PS_ArendC.open, #PT_ArendC.open, #PS_Parking.open, #PT_Parking.open, #PS_Ticket.open, #PT_Ticket.open {
+        display: block;
+    }
+
+.POST_client, .PUT_client, .PUT_users, .POST_ArendC, .PUT_ArendC,.POST_Parking, .PUT_Parking,.POST_Ticket, .PUT_Ticket {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    background: rgba(17, 17, 17, 0.5);
+    transition: all 0.5s ease;
+    display: none;
+}
+
+.POST_client_open, .PUT_client_open, .PUT_users_open, .POST_ArendC_open, .PUT_ArendC_open, .POST_Parking_open, .PUT_Parking_open, .POST_Ticket_open, .PUT_Ticket_open {
+    display: block;
+}
+
+.POST_client_container, .PUT_client_container, .PUT_users_container, .POST_ArendC_container, .PUT_ArendC_container,.POST_Parking_container, .PUT_Parking_container,.POST_Ticket_container, .PUT_Ticket_container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: #fff;
+    border-radius: 10px;
+    max-width: 588px;
+    width: 100%;
+}
+
+.POST_client_wrapper, .PUT_client_wrapper, .PUT_users_wrapper,.POST_ArendC_wrapper, .PUT_ArendC_wrapper,.POST_Parking_wrapper, .PUT_Parking_wrapper,.POST_Ticket_wrapper, .PUT_Ticket_wrapper {
+    padding: 40px;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+header {
+    text-align: center;
+    grid-area: header;
+    width: 100%;
+    height: fit-content;
+    background-color: rgb(118, 191, 255);
+    border: 20px;
+    border-top-left-radius: 200px;
+    border-bottom-left-radius: 200px;
+}
+body {
+    height: 100%;
+    background: #f5f4d7;
+}
+ul {
+    list-style-type: none;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background-color: #333;
+}
+
+li {
+    float: left;
+    border-right:1px solid #bbb;
+}
+
+li a {
+    display: block;
+    color: white;
+    text-align: center;
+    padding: 14px 16px;
+    text-decoration: none;
+}
+
+li a:hover:not(.active) {
+    background-color: #111;
+}
+
+a {
+    color:rgb(0, 0, 0);
+    
+}
+header h3 {
+    text-align: center ;
+    color: #000000;
+}
+.all {
+    width: 80%;
+    margin-left: 10%;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+form {
+    background-color: rgb(255, 255, 255);
+    width: 300px;
+    border-style: groove;
+    border-color: black;
+    border-radius: 10px;
+    margin: 5;
+    margin-bottom: 10px;
+    position: relative;
+    display: inline-block;
+}
+.table1, .table2, .table3, .table4, .table5 {
+    background-color: #ffffff;
+    border-style: groove;
+    border-color: black;
+    border-width: 15px;
+    margin-bottom: 15px;
+    margin-top: 10px;
+}
+table {
+    font-size: 14px;
+    width: 640px;
+    text-align: left;
+    border-collapse: collapse;
+    background: #fafafae2;
+    margin: 20px;
+    border-top: 5px solid #000000;
+    border-bottom: 5px solid #000000;
+    border-radius: 10px;
+    border-left: 5px solid #000000;
+    border-right: 5px solid #000000;
+    font-weight: bold;
+  }
+
+table caption {
+    color: #000000;
+    margin-bottom: 10px;
+    border-bottom: 3px solid #000000;
+    border-top: 5px solid #000000;
+    padding: 12px 10px;
+    background: #ffffff;
+
+    border-left: 5px solid rgb(0, 0, 0);
+    border-right: 5px solid #000000;
+  }
+table th {
+    color: #000000;
+    border-bottom: 1px solid #000000;
+    border-right: 1px solid #000000;
+    padding: 12px 17px;
+  }
+table tr {
+    color: #000000;
+  }
+table td {
+    color: #000000;
+    border-bottom: 1px solid #000000;
+    border-right:1px solid #000000;
+    padding: 7px 17px;
+  }
+
+table tr:hover td {
+    text-decoration: underline;
+}
+
+body {
+    padding-top: 45px;
+}
+
+.starter-template {
+    padding: 35px 22px;
+}
